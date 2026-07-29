@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Ventas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#e9e9e3;          /* mesa / fondo detrás del recibo */
+    --paper:#f6f6f1;       /* papel del recibo */
+    --paper-2:#f0f0ea;     /* franja levemente distinta */
+    --ink:#201f1c;         /* texto principal, tinta de impresora */
+    --ink-soft:#6b6a63;    /* texto secundario */
+    --line:#c9c8bf;        /* líneas / punteados */
+    --profit:#2f6b4f;      /* verde ganancia */
+    --profit-bg:#e4efe8;
+    --cost:#b23a2e;        /* rojo costo/gasto/inversión */
+    --cost-bg:#f6e6e3;
+    --amber:#c98a2c;       /* acento hoy / destacado */
+    --amber-bg:#f5ecd8;
+    --radius:2px;
+    --mono:'JetBrains Mono', ui-monospace, monospace;
+    --sans:'Inter', system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(0,0,0,0.05) 1px, transparent 0);
+    background-size: 14px 14px;
+    color:var(--ink);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:32px 16px 80px;
+  }
+
+  .receipt{
+    max-width:640px;
+    margin:0 auto;
+    background:var(--paper);
+    box-shadow:0 18px 40px -20px rgba(0,0,0,0.35);
+  }
+
+  .torn{
+    height:12px;
+    background:
+      linear-gradient(135deg, transparent 50%, var(--paper) 50%),
+      linear-gradient(-135deg, transparent 50%, var(--paper) 50%);
+    background-size:16px 16px;
+    background-repeat:repeat-x;
+    background-position: bottom;
+  }
+  .torn.top{ transform:scaleY(-1); margin-bottom:-1px; }
+
+  header.head{
+    padding:28px 28px 18px;
+    text-align:center;
+    border-bottom:1px dashed var(--line);
+  }
+  .brand-input{
+    font-family:var(--mono);
+    font-weight:800;
+    font-size:22px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    text-align:center;
+    border:none;
+    background:transparent;
+    color:var(--ink);
+    width:100%;
+    outline:none;
+  }
+  .brand-input::placeholder{ color:var(--ink-soft); }
+  .subtitle{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:6px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+  .subtitle span{ color:var(--ink); }
+
+  section{ padding:22px 28px; }
+  .cut{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 28px;
+    color:var(--ink-soft);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:2px;
+  }
+  .cut::before, .cut::after{
+    content:"";
+    flex:1;
+    border-top:1px dashed var(--line);
+  }
+
+  h2.section-title{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:2px;
+    color:var(--ink-soft);
+    margin:0 0 14px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  h2.section-title::after{
+    content:"";
+    flex:1;
+    border-top:1px dotted var(--line);
+  }
+  h2.section-title .tag{
+    font-size:9px;
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    padding:2px 6px;
+    color:var(--ink-soft);
+    letter-spacing:1px;
+  }
+
+  /* --- resumen tipo renglón de recibo --- */
+  .summary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .sum-card{
+    background:var(--paper-2);
+    border:1px solid var(--line);
+    padding:12px 14px;
+  }
+  .sum-card.today{ background:var(--amber-bg); border-color:#e0c98a; }
+  .sum-card.cost{ background:var(--cost-bg); border-color:#e0b3ac; }
+  .sum-card.profit-card{ background:var(--profit-bg); border-color:#a9cdb8; }
+  .sum-label{
+    font-family:var(--mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--ink-soft);
+  }
+  .sum-value{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:20px;
+    margin-top:4px;
+  }
+  .sum-value.profit{ color:var(--profit); }
+  .sum-value.cost{ color:var(--cost); }
+  .sum-sub{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+
+  .receipt-line{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    font-family:var(--mono);
+    font-size:13px;
+    margin:6px 0;
+  }
+  .receipt-line .fill{
+    flex:1;
+    border-bottom:1px dotted var(--line);
+    margin-bottom:3px;
+    min-width:8px;
+  }
+  .receipt-line .val{ font-weight:700; white-space:nowrap; }
+  .receipt-line .val.profit{ color:var(--profit); }
+  .receipt-line .val.cost{ color:var(--cost); }
+  .receipt-line.big{ font-size:15px; margin-top:12px; }
+
+  /* --- balance destacado --- */
+  .balance-box{
+    margin-top:16px;
+    padding:14px 16px;
+    border:1px solid var(--ink);
+    background:var(--paper-2);
+  }
+  .balance-box.positive{ border-color:var(--profit); background:var(--profit-bg); }
+  .balance-box.negative{ border-color:var(--cost); background:var(--cost-bg); }
+  .balance-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-family:var(--mono);
+  }
+  .balance-title{ font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--ink-soft); }
+  .balance-amount{ font-size:22px; font-weight:800; }
+  .balance-amount.positive{ color:var(--profit); }
+  .balance-amount.negative{ color:var(--cost); }
+  .balance-note{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:6px;
+  }
+  .progress-track{
+    height:8px;
+    background:#fff;
+    border:1px solid var(--line);
+    margin-top:10px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--amber);
+    transition:width .3s ease;
+  }
+  .progress-fill.complete{ background:var(--profit); }
+
+  /* --- formulario --- */
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  .field{ display:flex; flex-direction:column; gap:4px; }
+  .field.full{ grid-column:1/-1; }
+  label{
+    font-family:var(--mono);
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--ink-soft);
+  }
+  input, select{
+    font-family:var(--sans);
+    font-size:14px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    border-radius:var(--radius);
+    outline:none;
+    width:100%;
+  }
+  input:focus, select:focus{ border-color:var(--ink); }
+  input[type="number"]{ font-family:var(--mono); }
+
+  .preview{
+    background:var(--paper-2);
+    border:1px dashed var(--line);
+    padding:10px 12px;
+    margin:12px 0;
+    font-family:var(--mono);
+    font-size:12px;
+  }
+
+  .btn{
+    font-family:var(--mono);
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    font-weight:700;
+    padding:11px 16px;
+    border:1px solid var(--ink);
+    background:var(--ink);
+    color:var(--paper);
+    cursor:pointer;
+    border-radius:var(--radius);
+    transition:transform .08s ease;
+  }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn:active{ transform:translateY(0); }
+  .btn.secondary{ background:transparent; color:var(--ink); }
+  .btn.danger{ background:var(--cost); border-color:var(--cost); color:#fff; }
+  .btn.ghost{ background:transparent; border-color:var(--line); color:var(--ink-soft); }
+  .btn.invest{ background:var(--cost); border-color:var(--cost); color:#fff; }
+  .btn.small{ padding:6px 10px; font-size:10px; }
+  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+
+  /* --- filtros --- */
+  .filters{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+  .filters .field.full{ grid-column:1/-1; }
+
+  /* --- tabla --- */
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; font-family:var(--mono); font-size:12.5px; }
+  thead th{
+    text-align:left;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--ink);
+    padding:6px 8px;
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:8px;
+    border-bottom:1px dotted var(--line);
+    white-space:nowrap;
+  }
+  tbody tr:hover{ background:var(--paper-2); }
+  td.num, th.num{ text-align:right; }
+  td.profit{ color:var(--profit); font-weight:700; }
+  td.cost{ color:var(--cost); font-weight:700; }
+  .row-actions{ display:flex; gap:6px; }
+  .icon-btn{
+    border:none;
+    background:transparent;
+    cursor:pointer;
+    font-size:13px;
+    padding:2px 4px;
+    color:var(--ink-soft);
+  }
+  .icon-btn:hover{ color:var(--ink); }
+  .icon-btn.del:hover{ color:var(--cost); }
+  .empty-state{
+    text-align:center;
+    padding:30px 10px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--ink-soft);
+  }
+
+  /* --- gráfico últimos 7 días --- */
+  .chart{
+    display:flex;
+    align-items:flex-end;
+    gap:8px;
+    height:120px;
+    padding-top:10px;
+  }
+  .bar-col{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-end;
+    height:100%;
+    gap:6px;
+  }
+  .bar{
+    width:100%;
+    background:var(--ink);
+    min-height:2px;
+  }
+  .bar-col.today .bar{ background:var(--amber); }
+  .bar-label{
+    font-family:var(--mono);
+    font-size:9px;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .bar-col.today .bar-label{ color:var(--amber); font-weight:700; }
+
+  footer.foot{
+    padding:20px 28px 30px;
+    text-align:center;
+  }
+  .foot-note{
+    font-family:var(--mono);
+    font-size:10px;
+    color:var(--ink-soft);
+    letter-spacing:1px;
+    margin-top:14px;
+  }
+
+  #importFile{ display:none; }
+
+  @media (max-width:480px){
+    body{ padding:16px 6px 60px; }
+    section{ padding:18px 16px; }
+    header.head{ padding:22px 16px 14px; }
+    .field-row, .filters{ grid-template-columns:1fr; }
+    .summary-grid{ grid-template-columns:1fr; }
+    .balance-top{ flex-direction:column; gap:4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="receipt">
+  <header class="head">
+    <input class="brand-input" id="brandName" placeholder="Ventas" maxlength="40">
+    <div class="subtitle">Registro de ventas — <span id="todayLabel"></span></div>
+  </header>
+  <div class="torn"></div>
+
+  <!-- RESUMEN VENTAS -->
+  <section>
+    <h2 class="section-title">Resumen de ventas</h2>
+    <div class="summary-grid">
+      <div class="sum-card today">
+        <div class="sum-label">Vendido hoy</div>
+        <div class="sum-value" id="ventaHoy">$0,00</div>
+        <div class="sum-sub" id="unidadesHoy">0 unidades</div>
+      </div>
+      <div class="sum-card today">
+        <div class="sum-label">Ganancia hoy</div>
+        <div class="sum-value profit" id="gananciaHoy">$0,00</div>
+        <div class="sum-sub" id="margenHoy">margen 0%</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Vendido este mes</div>
+        <div class="sum-value" id="ventaMes">$0,00</div>
+        <div class="sum-sub" id="unidadesMes">0 unidades</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Ganancia este mes</div>
+        <div class="sum-value profit" id="gananciaMes">$0,00</div>
+        <div class="sum-sub" id="margenMes">margen 0%</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="receipt-line">
+        <span>Total histórico vendido</span><span class="fill"></span>
+        <span class="val" id="ventaTotal">$0,00</span>
+      </div>
+      <div class="receipt-line">
+        <span>Total histórico costo de mercadería</span><span class="fill"></span>
+        <span class="val cost" id="costoTotal">$0,00</span>
+      </div>
+      <div class="receipt-line">
+        <span>Total histórico ganancia</span><span class="fill"></span>
+        <span class="val profit" id="gananciaTotal">$0,00</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
+
+  <!-- INVERSION / CAPITAL -->
+  <section>
+    <h2 class="section-title">Plata invertida <span class="tag">capital</span></h2>
+
+    <form id="invForm">
+      <div class="field-row">
+        <div class="field">
+          <label for="invFecha">Fecha</label>
+          <input type="date" id="invFecha" required>
+        </div>
+        <div class="field">
+          <label for="invMonto">Monto invertido</label>
+          <input type="number" id="invMonto" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field full">
+          <label for="invConcepto">Concepto</label>
+          <input type="text" id="invConcepto" placeholder="Ej: compra de mercadería, alquiler, packaging..." required>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="submit" class="btn invest" id="invSubmitBtn">Registrar inversión</button>
+        <button type="button" class="btn secondary" id="invCancelEdit" style="display:none;">Cancelar edición</button>
+      </div>
+    </form>
+
+    <div class="summary-grid" style="margin-top:16px;">
+      <div class="sum-card cost">
+        <div class="sum-label">Invertido este mes</div>
+        <div class="sum-value cost" id="invertidoMes">$0,00</div>
+      </div>
+      <div class="sum-card cost">
+        <div class="sum-label">Invertido total</div>
+        <div class="sum-value cost" id="invertidoTotal">$0,00</div>
+      </div>
+    </div>
+
+    <div class="balance-box" id="balanceBox">
+      <div class="balance-top">
+        <span class="balance-title">Balance neto (ganancia − inversión)</span>
+        <span class="balance-amount" id="balanceAmount">$0,00</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill" style="width:0%;"></div>
+      </div>
+      <div class="balance-note" id="balanceNote">Todavía no cargaste inversión ni ventas.</div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:18px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th class="num">Monto</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="invTablaBody"></tbody>
+      </table>
+      <div class="empty-state" id="invEmptyState" style="display:none;">
+        Todavía no registraste plata invertida.
+      </div>
+    </div>
+  </section>
+
+  <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
+
+  <!-- ULTIMOS 7 DIAS -->
+  <section>
+    <h2 class="section-title">Ventas — últimos 7 días</h2>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
+
+  <!-- FORMULARIO VENTA -->
+  <section>
+    <h2 class="section-title">Cargar venta</h2>
+    <form id="ventaForm">
+      <div class="field-row">
+        <div class="field">
+          <label for="fecha">Fecha</label>
+          <input type="date" id="fecha" required>
+        </div>
+        <div class="field">
+          <label for="producto">Producto</label>
+          <input type="text" id="producto" placeholder="Ej: Remera talle M" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="cantidad">Cantidad</label>
+          <input type="number" id="cantidad" min="0.01" step="0.01" value="1" required>
+        </div>
+        <div class="field">
+          <label for="costoUnit">Costo unitario</label>
+          <input type="number" id="costoUnit" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field full">
+          <label for="precioUnit">Precio de venta unitario</label>
+          <input type="number" id="precioUnit" min="0" step="0.01" placeholder="0.00" required>
+        </div>
+      </div>
+
+      <div class="preview" id="preview">
+        Total venta: $0,00 &nbsp;·&nbsp; Ganancia: $0,00 &nbsp;·&nbsp; Margen: 0%
+      </div>
+
+      <div class="btn-row">
+        <button type="submit" class="btn" id="submitBtn">Agregar venta</button>
+        <button type="button" class="btn secondary" id="cancelEdit" style="display:none;">Cancelar edición</button>
+      </div>
+    </form>
+  </section>
+
+  <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
+
+  <!-- HISTORIAL VENTAS -->
+  <section>
+    <h2 class="section-title">Historial de ventas</h2>
+
+    <div class="filters">
+      <div class="field">
+        <label for="filtroDesde">Desde</label>
+        <input type="date" id="filtroDesde">
+      </div>
+      <div class="field">
+        <label for="filtroHasta">Hasta</label>
+        <input type="date" id="filtroHasta">
+      </div>
+      <div class="field full">
+        <label for="filtroTexto">Buscar producto</label>
+        <input type="text" id="filtroTexto" placeholder="Escribí para filtrar...">
+      </div>
+    </div>
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn ghost small" id="limpiarFiltros">Limpiar filtros</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Producto</th>
+            <th class="num">Cant.</th>
+            <th class="num">P. venta</th>
+            <th class="num">Total</th>
+            <th class="num">Ganancia</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tablaBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        Todavía no hay ventas cargadas.<br>Usá el formulario de arriba para agregar la primera.
+      </div>
+    </div>
+  </section>
+
+  <div class="torn top"></div>
+  <footer class="foot">
+    <div class="btn-row" style="justify-content:center;">
+      <button class="btn secondary small" id="exportJson">⬇ Backup completo (.json)</button>
+      <button class="btn secondary small" id="exportCsvVentas">⬇ CSV ventas</button>
+      <button class="btn secondary small" id="exportCsvInv">⬇ CSV inversión</button>
+      <button class="btn ghost small" id="importBtn">⬆ Importar backup</button>
+      <button class="btn danger small" id="resetAll">🗑 Borrar todo</button>
+    </div>
+    <input type="file" id="importFile" accept="application/json">
+    <div class="foot-note">Los datos se guardan solo en este navegador (localStorage).<br>Hacé backup seguido para no perder tu historial.</div>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "ventas_v1";
+  const GASTOS_KEY = "gastos_v1";
+  const BRAND_KEY = "ventas_brand";
+
+  /** ---------- Utilidades ---------- **/
+  const $ = (id) => document.getElementById(id);
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  const monthStr = (d) => d.slice(0,7);
+
+  function fmt(n){
+    const val = n||0;
+    const sign = val < 0 ? "-" : "";
+    return sign + "$" + Math.abs(val).toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function pct(n){
+    if(!isFinite(n)) return "0%";
+    return Math.round(n) + "%";
+  }
+  function escapeHtml(str){
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function download(filename, content, type){
+    const blob = new Blob([content], {type});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /** ---------- Estado ---------- **/
+  let ventas = [];
+  try{ ventas = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ ventas = []; }
+
+  let gastos = [];
+  try{ gastos = JSON.parse(localStorage.getItem(GASTOS_KEY)) || []; }catch(e){ gastos = []; }
+
+  let editingId = null;
+  let editingInvId = null;
+
+  function saveVentas(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(ventas)); }
+  function saveGastos(){ localStorage.setItem(GASTOS_KEY, JSON.stringify(gastos)); }
+
+  /** ---------- Cálculos: ventas ---------- **/
+  function calcRow(v){
+    const totalVenta = v.cantidad * v.precioUnit;
+    const totalCosto = v.cantidad * v.costoUnit;
+    const ganancia = totalVenta - totalCosto;
+    return { totalVenta, totalCosto, ganancia };
+  }
+
+  function totalsOf(list){
+    let totalVenta=0, totalCosto=0, ganancia=0, unidades=0;
+    list.forEach(v=>{
+      const c = calcRow(v);
+      totalVenta += c.totalVenta;
+      totalCosto += c.totalCosto;
+      ganancia += c.ganancia;
+      unidades += Number(v.cantidad);
+    });
+    return { totalVenta, totalCosto, ganancia, unidades };
+  }
+
+  /** ---------- Cálculos: inversión ---------- **/
+  function totalsGastos(list){
+    return list.reduce((sum, g)=> sum + Number(g.monto||0), 0);
+  }
+
+  /** ---------- Render: resumen ventas ---------- **/
+  function renderResumen(){
+    const hoy = todayStr();
+    const mesActual = monthStr(hoy);
+
+    const listaHoy = ventas.filter(v=>v.fecha === hoy);
+    const listaMes = ventas.filter(v=>monthStr(v.fecha) === mesActual);
+
+    const tHoy = totalsOf(listaHoy);
+    const tMes = totalsOf(listaMes);
+    const tTotal = totalsOf(ventas);
+
+    $("ventaHoy").textContent = fmt(tHoy.totalVenta);
+    $("unidadesHoy").textContent = tHoy.unidades + " unidades";
+    $("gananciaHoy").textContent = fmt(tHoy.ganancia);
+    $("margenHoy").textContent = "margen " + pct(tHoy.totalVenta ? (tHoy.ganancia/tHoy.totalVenta*100) : 0);
+
+    $("ventaMes").textContent = fmt(tMes.totalVenta);
+    $("unidadesMes").textContent = tMes.unidades + " unidades";
+    $("gananciaMes").textContent = fmt(tMes.ganancia);
+    $("margenMes").textContent = "margen " + pct(tMes.totalVenta ? (tMes.ganancia/tMes.totalVenta*100) : 0);
+
+    $("ventaTotal").textContent = fmt(tTotal.totalVenta);
+    $("gananciaTotal").textContent = fmt(tTotal.ganancia);
+    $("costoTotal").textContent = fmt(tTotal.totalCosto);
+
+    return tTotal;
+  }
+
+  /** ---------- Render: inversión y balance ---------- **/
+  function renderInversion(tTotalVentas){
+    const hoy = todayStr();
+    const mesActual = monthStr(hoy);
+
+    const gastosMesList = gastos.filter(g=>monthStr(g.fecha) === mesActual);
+    const invertidoMes = totalsGastos(gastosMesList);
+    const invertidoTotal = totalsGastos(gastos);
+
+    $("invertidoMes").textContent = fmt(invertidoMes);
+    $("invertidoTotal").textContent = fmt(invertidoTotal);
+
+    const ganancia = tTotalVentas.ganancia;
+    const balance = ganancia - invertidoTotal;
+
+    const box = $("balanceBox");
+    const amountEl = $("balanceAmount");
+    const fill = $("progressFill");
+    const note = $("balanceNote");
+
+    box.classList.remove("positive","negative");
+    amountEl.classList.remove("positive","negative");
+    fill.classList.remove("complete");
+
+    amountEl.textContent = fmt(balance);
+
+    if(invertidoTotal <= 0 && ganancia <= 0){
+      note.textContent = "Todavía no cargaste inversión ni ventas.";
+      fill.style.width = "0%";
+    } else if(invertidoTotal <= 0){
+      box.classList.add("positive");
+      amountEl.classList.add("positive");
+      fill.style.width = "100%";
+      fill.classList.add("complete");
+      note.textContent = "No registraste inversión todavía: toda la ganancia es neta.";
+    } else {
+      const recuperado = (ganancia / invertidoTotal) * 100;
+      const clamped = Math.max(0, Math.min(100, recuperado));
+      fill.style.width = clamped + "%";
+      if(balance >= 0){
+        box.classList.add("positive");
+        amountEl.classList.add("positive");
+        fill.classList.add("complete");
+        note.textContent = "Recuperaste el " + pct(recuperado) + " de lo invertido. Ya estás en ganancia neta.";
+      } else {
+        box.classList.add("negative");
+        amountEl.classList.add("negative");
+        note.textContent = "Recuperaste el " + pct(recuperado) + " de lo invertido. Te faltan " + fmt(Math.abs(balance)) + " para llegar a ganancia neta.";
+      }
+    }
+  }
+
+  /** ---------- Render: gráfico últimos 7 días ---------- **/
+  function renderChart(){
+    const dias = [];
+    for(let i=6;i>=0;i--){
+      const d = new Date();
+      d.setDate(d.getDate()-i);
+      const iso = d.toISOString().slice(0,10);
+      const lista = ventas.filter(v=>v.fecha===iso);
+      const t = totalsOf(lista);
+      dias.push({
+        iso,
+        label: d.toLocaleDateString('es-AR', {weekday:'short'}).replace('.',''),
+        total: t.totalVenta,
+        isToday: iso === todayStr()
+      });
+    }
+    const max = Math.max(...dias.map(d=>d.total), 1);
+    const chart = $("chart");
+    chart.innerHTML = "";
+    dias.forEach(d=>{
+      const col = document.createElement("div");
+      col.className = "bar-col" + (d.isToday ? " today" : "");
+      const h = Math.max(2, Math.round((d.total/max)*90));
+      col.innerHTML = `
+        <div style="font-family:var(--mono); font-size:9px; color:var(--ink-soft);">${d.total>0? fmt(d.total).replace('$','$ ').replace(',00','') : ''}</div>
+        <div class="bar" style="height:${h}px;"></div>
+        <div class="bar-label">${d.label}</div>
+      `;
+      chart.appendChild(col);
+    });
+  }
+
+  /** ---------- Render: tabla ventas ---------- **/
+  function getFiltered(){
+    const desde = $("filtroDesde").value;
+    const hasta = $("filtroHasta").value;
+    const texto = $("filtroTexto").value.trim().toLowerCase();
+
+    return ventas
+      .filter(v=>{
+        if(desde && v.fecha < desde) return false;
+        if(hasta && v.fecha > hasta) return false;
+        if(texto && !v.producto.toLowerCase().includes(texto)) return false;
+        return true;
+      })
+      .sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id - a.id);
+  }
+
+  function renderTabla(){
+    const lista = getFiltered();
+    const body = $("tablaBody");
+    const empty = $("emptyState");
+    body.innerHTML = "";
+
+    if(lista.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    lista.forEach(v=>{
+      const c = calcRow(v);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${v.fecha}</td>
+        <td>${escapeHtml(v.producto)}</td>
+        <td class="num">${v.cantidad}</td>
+        <td class="num">${fmt(v.precioUnit)}</td>
+        <td class="num">${fmt(c.totalVenta)}</td>
+        <td class="num profit">${fmt(c.ganancia)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn edit" data-id="${v.id}" title="Editar">✎</button>
+            <button class="icon-btn del" data-id="${v.id}" title="Eliminar">✕</button>
+          </div>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  /** ---------- Render: tabla inversión ---------- **/
+  function renderTablaInv(){
+    const lista = gastos.slice().sort((a,b)=> b.fecha.localeCompare(a.fecha) || b.id - a.id);
+    const body = $("invTablaBody");
+    const empty = $("invEmptyState");
+    body.innerHTML = "";
+
+    if(lista.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    lista.forEach(g=>{
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${g.fecha}</td>
+        <td>${escapeHtml(g.concepto)}</td>
+        <td class="num cost">${fmt(g.monto)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn edit" data-id="${g.id}" title="Editar">✎</button>
+            <button class="icon-btn del" data-id="${g.id}" title="Eliminar">✕</button>
+          </div>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  function renderAll(){
+    const tTotal = renderResumen();
+    renderInversion(tTotal);
+    renderChart();
+    renderTabla();
+    renderTablaInv();
+  }
+
+  /** ---------- Preview del formulario de venta ---------- **/
+  function updatePreview(){
+    const cantidad = parseFloat($("cantidad").value) || 0;
+    const costoUnit = parseFloat($("costoUnit").value) || 0;
+    const precioUnit = parseFloat($("precioUnit").value) || 0;
+    const totalVenta = cantidad*precioUnit;
+    const ganancia = totalVenta - cantidad*costoUnit;
+    const margen = totalVenta ? (ganancia/totalVenta*100) : 0;
+    $("preview").textContent =
+      `Total venta: ${fmt(totalVenta)} · Ganancia: ${fmt(ganancia)} · Margen: ${pct(margen)}`;
+  }
+  ["cantidad","costoUnit","precioUnit"].forEach(id=>{
+    $(id).addEventListener("input", updatePreview);
+  });
+
+  /** ---------- Formulario venta: agregar / editar ---------- **/
+  $("ventaForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const data = {
+      fecha: $("fecha").value,
+      producto: $("producto").value.trim(),
+      cantidad: parseFloat($("cantidad").value),
+      costoUnit: parseFloat($("costoUnit").value),
+      precioUnit: parseFloat($("precioUnit").value),
+    };
+    if(!data.fecha || !data.producto || !(data.cantidad>0)) return;
+
+    if(editingId){
+      const idx = ventas.findIndex(v=>v.id===editingId);
+      if(idx>-1) ventas[idx] = { ...ventas[idx], ...data };
+      exitEditMode();
+    } else {
+      ventas.push({ id: Date.now(), ...data });
+    }
+    saveVentas();
+    renderAll();
+    resetForm();
+  });
+
+  function resetForm(){
+    $("ventaForm").reset();
+    $("fecha").value = todayStr();
+    $("cantidad").value = 1;
+    updatePreview();
+  }
+
+  function enterEditMode(v){
+    editingId = v.id;
+    $("fecha").value = v.fecha;
+    $("producto").value = v.producto;
+    $("cantidad").value = v.cantidad;
+    $("costoUnit").value = v.costoUnit;
+    $("precioUnit").value = v.precioUnit;
+    updatePreview();
+    $("submitBtn").textContent = "Guardar cambios";
+    $("cancelEdit").style.display = "inline-block";
+    $("ventaForm").scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  function exitEditMode(){
+    editingId = null;
+    $("submitBtn").textContent = "Agregar venta";
+    $("cancelEdit").style.display = "none";
+  }
+
+  $("cancelEdit").addEventListener("click", function(){
+    exitEditMode();
+    resetForm();
+  });
+
+  $("tablaBody").addEventListener("click", function(e){
+    const editBtn = e.target.closest(".edit");
+    const delBtn = e.target.closest(".del");
+    if(editBtn){
+      const id = Number(editBtn.dataset.id);
+      const v = ventas.find(x=>x.id===id);
+      if(v) enterEditMode(v);
+    }
+    if(delBtn){
+      const id = Number(delBtn.dataset.id);
+      if(confirm("¿Eliminar esta venta? Esta acción no se puede deshacer.")){
+        ventas = ventas.filter(v=>v.id!==id);
+        saveVentas();
+        renderAll();
+        if(editingId===id){ exitEditMode(); resetForm(); }
+      }
+    }
+  });
+
+  /** ---------- Formulario inversión: agregar / editar ---------- **/
+  $("invForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const data = {
+      fecha: $("invFecha").value,
+      concepto: $("invConcepto").value.trim(),
+      monto: parseFloat($("invMonto").value),
+    };
+    if(!data.fecha || !data.concepto || !(data.monto>0)) return;
+
+    if(editingInvId){
+      const idx = gastos.findIndex(g=>g.id===editingInvId);
+      if(idx>-1) gastos[idx] = { ...gastos[idx], ...data };
+      exitEditInvMode();
+    } else {
+      gastos.push({ id: Date.now(), ...data });
+    }
+    saveGastos();
+    renderAll();
+    resetInvForm();
+  });
+
+  function resetInvForm(){
+    $("invForm").reset();
+    $("invFecha").value = todayStr();
+  }
+
+  function enterEditInvMode(g){
+    editingInvId = g.id;
+    $("invFecha").value = g.fecha;
+    $("invConcepto").value = g.concepto;
+    $("invMonto").value = g.monto;
+    $("invSubmitBtn").textContent = "Guardar cambios";
+    $("invCancelEdit").style.display = "inline-block";
+    $("invForm").scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  function exitEditInvMode(){
+    editingInvId = null;
+    $("invSubmitBtn").textContent = "Registrar inversión";
+    $("invCancelEdit").style.display = "none";
+  }
+
+  $("invCancelEdit").addEventListener("click", function(){
+    exitEditInvMode();
+    resetInvForm();
+  });
+
+  $("invTablaBody").addEventListener("click", function(e){
+    const editBtn = e.target.closest(".edit");
+    const delBtn = e.target.closest(".del");
+    if(editBtn){
+      const id = Number(editBtn.dataset.id);
+      const g = gastos.find(x=>x.id===id);
+      if(g) enterEditInvMode(g);
+    }
+    if(delBtn){
+      const id = Number(delBtn.dataset.id);
+      if(confirm("¿Eliminar este registro de inversión?")){
+        gastos = gastos.filter(g=>g.id!==id);
+        saveGastos();
+        renderAll();
+        if(editingInvId===id){ exitEditInvMode(); resetInvForm(); }
+      }
+    }
+  });
+
+  /** ---------- Filtros historial ventas ---------- **/
+  ["filtroDesde","filtroHasta","filtroTexto"].forEach(id=>{
+    $(id).addEventListener("input", renderTabla);
+  });
+  $("limpiarFiltros").addEventListener("click", function(){
+    $("filtroDesde").value = "";
+    $("filtroHasta").value = "";
+    $("filtroTexto").value = "";
+    renderTabla();
+  });
+
+  /** ---------- Exportar / Importar ---------- **/
+  $("exportJson").addEventListener("click", function(){
+    const payload = { ventas, gastos, exportedAt: new Date().toISOString() };
+    download("negocio-backup-" + todayStr() + ".json", JSON.stringify(payload, null, 2), "application/json");
+  });
+
+  $("exportCsvVentas").addEventListener("click", function(){
+    const headers = ["fecha","producto","cantidad","costo_unitario","precio_venta_unitario","total_venta","total_costo","ganancia"];
+    const rows = ventas
+      .slice()
+      .sort((a,b)=> a.fecha.localeCompare(b.fecha))
+      .map(v=>{
+        const c = calcRow(v);
+        return [v.fecha, v.producto, v.cantidad, v.costoUnit, v.precioUnit, c.totalVenta.toFixed(2), c.totalCosto.toFixed(2), c.ganancia.toFixed(2)]
+          .map(x=> typeof x === "string" && x.includes(",") ? `"${x}"` : x)
+          .join(",");
+      });
+    const csv = headers.join(",") + "\n" + rows.join("\n");
+    download("ventas-" + todayStr() + ".csv", csv, "text/csv");
+  });
+
+  $("exportCsvInv").addEventListener("click", function(){
+    const headers = ["fecha","concepto","monto"];
+    const rows = gastos
+      .slice()
+      .sort((a,b)=> a.fecha.localeCompare(b.fecha))
+      .map(g=>{
+        return [g.fecha, g.concepto, Number(g.monto).toFixed(2)]
+          .map(x=> typeof x === "string" && x.includes(",") ? `"${x}"` : x)
+          .join(",");
+      });
+    const csv = headers.join(",") + "\n" + rows.join("\n");
+    download("inversion-" + todayStr() + ".csv", csv, "text/csv");
+  });
+
+  $("importBtn").addEventListener("click", ()=> $("importFile").click());
+  $("importFile").addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        const data = JSON.parse(evt.target.result);
+        let nuevasVentas, nuevosGastos;
+
+        if(Array.isArray(data)){
+          // backup viejo: solo tenía ventas
+          nuevasVentas = data;
+          nuevosGastos = [];
+        } else if(data && typeof data === "object"){
+          nuevasVentas = Array.isArray(data.ventas) ? data.ventas : [];
+          nuevosGastos = Array.isArray(data.gastos) ? data.gastos : [];
+        } else {
+          throw new Error("Formato inválido");
+        }
+
+        const modo = confirm("Aceptar = REEMPLAZAR todos los datos actuales.\nCancelar = COMBINAR con los datos actuales.");
+        if(modo){
+          ventas = nuevasVentas;
+          gastos = nuevosGastos;
+        } else {
+          const idsVentas = new Set(ventas.map(v=>v.id));
+          nuevasVentas.forEach(v=>{ if(!idsVentas.has(v.id)) ventas.push(v); });
+          const idsGastos = new Set(gastos.map(g=>g.id));
+          nuevosGastos.forEach(g=>{ if(!idsGastos.has(g.id)) gastos.push(g); });
+        }
+        saveVentas();
+        saveGastos();
+        renderAll();
+        alert("Backup importado correctamente.");
+      }catch(err){
+        alert("No se pudo leer el archivo. Verificá que sea un backup válido (.json).");
+      }
+      $("importFile").value = "";
+    };
+    reader.readAsText(file);
+  });
+
+  $("resetAll").addEventListener("click", function(){
+    if(ventas.length === 0 && gastos.length === 0){ alert("No hay datos para borrar."); return; }
+    if(confirm("Esto borrará TODAS las ventas y TODA la inversión guardadas en este navegador. ¿Continuar?")){
+      if(confirm("Última confirmación: se perderán todos los datos si no hiciste un backup. ¿Borrar todo?")){
+        ventas = [];
+        gastos = [];
+        saveVentas();
+        saveGastos();
+        renderAll();
+      }
+    }
+  });
+
+  /** ---------- Nombre del negocio ---------- **/
+  $("brandName").value = localStorage.getItem(BRAND_KEY) || "";
+  $("brandName").addEventListener("input", function(){
+    localStorage.setItem(BRAND_KEY, this.value);
+  });
+
+  /** ---------- Init ---------- **/
+  $("fecha").value = todayStr();
+  $("invFecha").value = todayStr();
+  $("filtroHasta").value = "";
+  $("todayLabel").textContent = new Date().toLocaleDateString('es-AR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  updatePreview();
+  renderAll();
+
+})();
+</script>
+</body>
+</html>
