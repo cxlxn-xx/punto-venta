@@ -17,7 +17,7 @@
     --line:#c9c8bf;        /* líneas / punteados */
     --profit:#2f6b4f;      /* verde ganancia */
     --profit-bg:#e4efe8;
-    --cost:#b23a2e;        /* rojo costo/gasto/inversión */
+    --cost:#b23a2e;        /* rojo costo/gasto/inversión/alerta */
     --cost-bg:#f6e6e3;
     --amber:#c98a2c;       /* acento hoy / destacado */
     --amber-bg:#f5ecd8;
@@ -182,7 +182,6 @@
   .receipt-line .val{ font-weight:700; white-space:nowrap; }
   .receipt-line .val.profit{ color:var(--profit); }
   .receipt-line .val.cost{ color:var(--cost); }
-  .receipt-line.big{ font-size:15px; margin-top:12px; }
 
   /* --- balance destacado --- */
   .balance-box{
@@ -247,6 +246,22 @@
   }
   input:focus, select:focus{ border-color:var(--ink); }
   input[type="number"]{ font-family:var(--mono); }
+  .field-hint{
+    font-family:var(--mono);
+    font-size:10.5px;
+    color:var(--ink-soft);
+    min-height:13px;
+  }
+  .check-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-family:var(--sans);
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:12px;
+  }
+  .check-row input{ width:auto; }
 
   .preview{
     background:var(--paper-2);
@@ -277,6 +292,7 @@
   .btn.danger{ background:var(--cost); border-color:var(--cost); color:#fff; }
   .btn.ghost{ background:transparent; border-color:var(--line); color:var(--ink-soft); }
   .btn.invest{ background:var(--cost); border-color:var(--cost); color:#fff; }
+  .btn.stockbtn{ background:var(--amber); border-color:var(--amber); color:#fff; }
   .btn.small{ padding:6px 10px; font-size:10px; }
   .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
 
@@ -502,6 +518,76 @@
 
   <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
 
+  <!-- STOCK -->
+  <section>
+    <h2 class="section-title">Stock <span class="tag">inventario</span></h2>
+
+    <form id="stockForm">
+      <div class="field-row">
+        <div class="field full">
+          <label for="stockNombre">Producto</label>
+          <input type="text" id="stockNombre" list="productosList" placeholder="Ej: Remera talle M" required>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="stockCantidad">Cantidad a sumar</label>
+          <input type="number" id="stockCantidad" step="0.01" placeholder="10 (o -2 para descontar)" required>
+        </div>
+        <div class="field">
+          <label for="stockCosto">Costo unitario</label>
+          <input type="number" id="stockCosto" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field full">
+          <label for="stockPrecio">Precio de venta sugerido</label>
+          <input type="number" id="stockPrecio" min="0" step="0.01" placeholder="0.00">
+        </div>
+      </div>
+      <label class="check-row">
+        <input type="checkbox" id="stockComoInversion">
+        Registrar esta carga también como inversión (cantidad × costo)
+      </label>
+      <div class="btn-row">
+        <button type="submit" class="btn stockbtn" id="stockSubmitBtn">Cargar / ajustar stock</button>
+      </div>
+    </form>
+
+    <div class="summary-grid" style="margin-top:16px;">
+      <div class="sum-card">
+        <div class="sum-label">Productos con stock</div>
+        <div class="sum-value" id="stockProductos">0</div>
+      </div>
+      <div class="sum-card">
+        <div class="sum-label">Valor total en stock</div>
+        <div class="sum-value" id="stockValor">$0,00</div>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:18px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="num">Stock</th>
+            <th class="num">Costo</th>
+            <th class="num">P. venta</th>
+            <th class="num">Valor</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="stockTablaBody"></tbody>
+      </table>
+      <div class="empty-state" id="stockEmptyState" style="display:none;">
+        Todavía no cargaste stock. Usá el formulario de arriba.
+      </div>
+    </div>
+    <datalist id="productosList"></datalist>
+  </section>
+
+  <div class="cut">✂ &nbsp;corte aquí&nbsp; ✂</div>
+
   <!-- ULTIMOS 7 DIAS -->
   <section>
     <h2 class="section-title">Ventas — últimos 7 días</h2>
@@ -521,9 +607,10 @@
         </div>
         <div class="field">
           <label for="producto">Producto</label>
-          <input type="text" id="producto" placeholder="Ej: Remera talle M" required>
+          <input type="text" id="producto" list="productosList" placeholder="Ej: Remera talle M" required autocomplete="off">
         </div>
       </div>
+      <div class="field-hint" id="stockDisponible" style="text-align:right; margin-top:-6px; margin-bottom:8px;"></div>
       <div class="field-row">
         <div class="field">
           <label for="cantidad">Cantidad</label>
@@ -603,6 +690,7 @@
       <button class="btn secondary small" id="exportJson">⬇ Backup completo (.json)</button>
       <button class="btn secondary small" id="exportCsvVentas">⬇ CSV ventas</button>
       <button class="btn secondary small" id="exportCsvInv">⬇ CSV inversión</button>
+      <button class="btn secondary small" id="exportCsvStock">⬇ CSV stock</button>
       <button class="btn ghost small" id="importBtn">⬆ Importar backup</button>
       <button class="btn danger small" id="resetAll">🗑 Borrar todo</button>
     </div>
@@ -617,12 +705,14 @@
 
   const STORAGE_KEY = "ventas_v1";
   const GASTOS_KEY = "gastos_v1";
+  const STOCK_KEY = "stock_v1";
   const BRAND_KEY = "ventas_brand";
 
   /** ---------- Utilidades ---------- **/
   const $ = (id) => document.getElementById(id);
   const todayStr = () => new Date().toISOString().slice(0,10);
   const monthStr = (d) => d.slice(0,7);
+  const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   function fmt(n){
     const val = n||0;
@@ -654,11 +744,15 @@
   let gastos = [];
   try{ gastos = JSON.parse(localStorage.getItem(GASTOS_KEY)) || []; }catch(e){ gastos = []; }
 
+  let stockList = [];
+  try{ stockList = JSON.parse(localStorage.getItem(STOCK_KEY)) || []; }catch(e){ stockList = []; }
+
   let editingId = null;
   let editingInvId = null;
 
   function saveVentas(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(ventas)); }
   function saveGastos(){ localStorage.setItem(GASTOS_KEY, JSON.stringify(gastos)); }
+  function saveStock(){ localStorage.setItem(STOCK_KEY, JSON.stringify(stockList)); }
 
   /** ---------- Cálculos: ventas ---------- **/
   function calcRow(v){
@@ -683,6 +777,27 @@
   /** ---------- Cálculos: inversión ---------- **/
   function totalsGastos(list){
     return list.reduce((sum, g)=> sum + Number(g.monto||0), 0);
+  }
+
+  /** ---------- Cálculos: stock ---------- **/
+  function findStock(nombre){
+    if(!nombre) return null;
+    const key = nombre.trim().toLowerCase();
+    return stockList.find(s=>s.nombre.trim().toLowerCase()===key) || null;
+  }
+
+  // delta > 0 suma stock (compra/carga), delta < 0 descuenta (venta/ajuste)
+  function adjustStock(nombre, delta, costoUnit, precioUnit){
+    nombre = (nombre||"").trim();
+    if(!nombre) return;
+    let item = findStock(nombre);
+    if(!item){
+      item = { id: Date.now() + Math.random(), nombre, stock:0, costoUnit:0, precioUnit:0 };
+      stockList.push(item);
+    }
+    item.stock = round2(item.stock + delta);
+    if(costoUnit != null && costoUnit > 0) item.costoUnit = costoUnit;
+    if(precioUnit != null && precioUnit > 0) item.precioUnit = precioUnit;
   }
 
   /** ---------- Render: resumen ventas ---------- **/
@@ -764,6 +879,56 @@
         note.textContent = "Recuperaste el " + pct(recuperado) + " de lo invertido. Te faltan " + fmt(Math.abs(balance)) + " para llegar a ganancia neta.";
       }
     }
+  }
+
+  /** ---------- Render: stock ---------- **/
+  function updateProductosList(nombres){
+    const dl = $("productosList");
+    dl.innerHTML = nombres.map(n=>`<option value="${escapeHtml(n)}"></option>`).join("");
+  }
+
+  function renderStock(){
+    const body = $("stockTablaBody");
+    const empty = $("stockEmptyState");
+    const lista = stockList.slice().sort((a,b)=> a.nombre.localeCompare(b.nombre, 'es'));
+    body.innerHTML = "";
+
+    if(lista.length === 0){
+      empty.style.display = "block";
+      $("stockProductos").textContent = "0";
+      $("stockValor").textContent = fmt(0);
+      updateProductosList([]);
+      return;
+    }
+    empty.style.display = "none";
+
+    let valorTotal = 0;
+    let conStock = 0;
+
+    lista.forEach(s=>{
+      const valor = s.stock * s.costoUnit;
+      if(s.stock > 0){ valorTotal += valor; conStock++; }
+      const bajo = s.stock <= 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(s.nombre)}</td>
+        <td class="num ${bajo ? 'cost' : ''}" style="font-weight:${bajo ? '700' : '400'};">${s.stock}${bajo ? ' ⚠️' : ''}</td>
+        <td class="num">${fmt(s.costoUnit)}</td>
+        <td class="num">${fmt(s.precioUnit)}</td>
+        <td class="num">${fmt(valor)}</td>
+        <td>
+          <div class="row-actions">
+            <button class="icon-btn edit" data-id="${s.id}" title="Precargar en el formulario">✎</button>
+            <button class="icon-btn del" data-id="${s.id}" title="Dejar de trackear este producto">✕</button>
+          </div>
+        </td>
+      `;
+      body.appendChild(tr);
+    });
+
+    $("stockProductos").textContent = String(conStock);
+    $("stockValor").textContent = fmt(valorTotal);
+    updateProductosList(lista.map(s=>s.nombre));
   }
 
   /** ---------- Render: gráfico últimos 7 días ---------- **/
@@ -880,12 +1045,13 @@
   function renderAll(){
     const tTotal = renderResumen();
     renderInversion(tTotal);
+    renderStock();
     renderChart();
     renderTabla();
     renderTablaInv();
   }
 
-  /** ---------- Preview del formulario de venta ---------- **/
+  /** ---------- Preview del formulario de venta + autocompletar por stock ---------- **/
   function updatePreview(){
     const cantidad = parseFloat($("cantidad").value) || 0;
     const costoUnit = parseFloat($("costoUnit").value) || 0;
@@ -900,6 +1066,20 @@
     $(id).addEventListener("input", updatePreview);
   });
 
+  $("producto").addEventListener("input", function(){
+    const s = findStock(this.value);
+    const hint = $("stockDisponible");
+    if(s){
+      hint.textContent = "Stock disponible: " + s.stock + (s.stock<=0 ? " ⚠️ sin stock" : "");
+      hint.style.color = s.stock<=0 ? "var(--cost)" : "var(--ink-soft)";
+      if(!$("costoUnit").value && s.costoUnit) $("costoUnit").value = s.costoUnit;
+      if(!$("precioUnit").value && s.precioUnit) $("precioUnit").value = s.precioUnit;
+      updatePreview();
+    } else {
+      hint.textContent = "";
+    }
+  });
+
   /** ---------- Formulario venta: agregar / editar ---------- **/
   $("ventaForm").addEventListener("submit", function(e){
     e.preventDefault();
@@ -912,14 +1092,37 @@
     };
     if(!data.fecha || !data.producto || !(data.cantidad>0)) return;
 
+    // chequeo de stock disponible (avisa, no bloquea)
+    const stockItem = findStock(data.producto);
+    if(stockItem){
+      let disponibleEfectivo = stockItem.stock;
+      if(editingId){
+        const old = ventas.find(v=>v.id===editingId);
+        if(old && old.producto.trim().toLowerCase() === data.producto.trim().toLowerCase()){
+          disponibleEfectivo += old.cantidad;
+        }
+      }
+      if(data.cantidad > disponibleEfectivo){
+        const seguir = confirm(`Estás vendiendo ${data.cantidad} de "${data.producto}" pero el stock disponible es ${disponibleEfectivo}. ¿Registrar la venta igual?`);
+        if(!seguir) return;
+      }
+    }
+
     if(editingId){
       const idx = ventas.findIndex(v=>v.id===editingId);
-      if(idx>-1) ventas[idx] = { ...ventas[idx], ...data };
+      if(idx>-1){
+        const old = ventas[idx];
+        adjustStock(old.producto, old.cantidad); // revierte el descuento anterior
+        ventas[idx] = { ...old, ...data };
+        adjustStock(data.producto, -data.cantidad, data.costoUnit, data.precioUnit);
+      }
       exitEditMode();
     } else {
       ventas.push({ id: Date.now(), ...data });
+      adjustStock(data.producto, -data.cantidad, data.costoUnit, data.precioUnit);
     }
     saveVentas();
+    saveStock();
     renderAll();
     resetForm();
   });
@@ -928,6 +1131,7 @@
     $("ventaForm").reset();
     $("fecha").value = todayStr();
     $("cantidad").value = 1;
+    $("stockDisponible").textContent = "";
     updatePreview();
   }
 
@@ -966,8 +1170,11 @@
     if(delBtn){
       const id = Number(delBtn.dataset.id);
       if(confirm("¿Eliminar esta venta? Esta acción no se puede deshacer.")){
+        const v = ventas.find(x=>x.id===id);
+        if(v) adjustStock(v.producto, v.cantidad); // devuelve el stock
         ventas = ventas.filter(v=>v.id!==id);
         saveVentas();
+        saveStock();
         renderAll();
         if(editingId===id){ exitEditMode(); resetForm(); }
       }
@@ -1041,6 +1248,58 @@
     }
   });
 
+  /** ---------- Formulario stock: cargar / ajustar ---------- **/
+  $("stockForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    const nombre = $("stockNombre").value.trim();
+    const cantidad = parseFloat($("stockCantidad").value);
+    const costo = parseFloat($("stockCosto").value);
+    const precio = parseFloat($("stockPrecio").value);
+    if(!nombre || isNaN(cantidad) || cantidad === 0) return;
+
+    adjustStock(nombre, cantidad, isNaN(costo)?null:costo, isNaN(precio)?null:precio);
+
+    if($("stockComoInversion").checked && cantidad > 0 && !isNaN(costo) && costo > 0){
+      gastos.push({
+        id: Date.now(),
+        fecha: todayStr(),
+        concepto: "Compra de stock: " + nombre + " x" + cantidad,
+        monto: round2(costo * cantidad)
+      });
+      saveGastos();
+    }
+
+    saveStock();
+    renderAll();
+    $("stockForm").reset();
+    $("stockComoInversion").checked = false;
+  });
+
+  $("stockTablaBody").addEventListener("click", function(e){
+    const editBtn = e.target.closest(".edit");
+    const delBtn = e.target.closest(".del");
+    if(editBtn){
+      const id = Number(editBtn.dataset.id);
+      const s = stockList.find(x=>x.id===id);
+      if(s){
+        $("stockNombre").value = s.nombre;
+        $("stockCosto").value = s.costoUnit || "";
+        $("stockPrecio").value = s.precioUnit || "";
+        $("stockCantidad").value = "";
+        $("stockCantidad").focus();
+        $("stockForm").scrollIntoView({behavior:"smooth", block:"center"});
+      }
+    }
+    if(delBtn){
+      const id = Number(delBtn.dataset.id);
+      if(confirm("¿Dejar de trackear este producto en stock?\n(No borra ventas ni inversión ya cargadas, solo el conteo de inventario.)")){
+        stockList = stockList.filter(s=>s.id!==id);
+        saveStock();
+        renderAll();
+      }
+    }
+  });
+
   /** ---------- Filtros historial ventas ---------- **/
   ["filtroDesde","filtroHasta","filtroTexto"].forEach(id=>{
     $(id).addEventListener("input", renderTabla);
@@ -1054,7 +1313,7 @@
 
   /** ---------- Exportar / Importar ---------- **/
   $("exportJson").addEventListener("click", function(){
-    const payload = { ventas, gastos, exportedAt: new Date().toISOString() };
+    const payload = { ventas, gastos, stock: stockList, exportedAt: new Date().toISOString() };
     download("negocio-backup-" + todayStr() + ".json", JSON.stringify(payload, null, 2), "application/json");
   });
 
@@ -1087,6 +1346,20 @@
     download("inversion-" + todayStr() + ".csv", csv, "text/csv");
   });
 
+  $("exportCsvStock").addEventListener("click", function(){
+    const headers = ["producto","stock","costo_unitario","precio_venta","valor_en_stock"];
+    const rows = stockList
+      .slice()
+      .sort((a,b)=> a.nombre.localeCompare(b.nombre,'es'))
+      .map(s=>{
+        return [s.nombre, s.stock, s.costoUnit.toFixed(2), s.precioUnit.toFixed(2), (s.stock*s.costoUnit).toFixed(2)]
+          .map(x=> typeof x === "string" && x.includes(",") ? `"${x}"` : x)
+          .join(",");
+      });
+    const csv = headers.join(",") + "\n" + rows.join("\n");
+    download("stock-" + todayStr() + ".csv", csv, "text/csv");
+  });
+
   $("importBtn").addEventListener("click", ()=> $("importFile").click());
   $("importFile").addEventListener("change", function(e){
     const file = e.target.files[0];
@@ -1095,15 +1368,17 @@
     reader.onload = function(evt){
       try{
         const data = JSON.parse(evt.target.result);
-        let nuevasVentas, nuevosGastos;
+        let nuevasVentas, nuevosGastos, nuevoStock;
 
         if(Array.isArray(data)){
           // backup viejo: solo tenía ventas
           nuevasVentas = data;
           nuevosGastos = [];
+          nuevoStock = [];
         } else if(data && typeof data === "object"){
           nuevasVentas = Array.isArray(data.ventas) ? data.ventas : [];
           nuevosGastos = Array.isArray(data.gastos) ? data.gastos : [];
+          nuevoStock = Array.isArray(data.stock) ? data.stock : [];
         } else {
           throw new Error("Formato inválido");
         }
@@ -1112,14 +1387,26 @@
         if(modo){
           ventas = nuevasVentas;
           gastos = nuevosGastos;
+          stockList = nuevoStock;
         } else {
           const idsVentas = new Set(ventas.map(v=>v.id));
           nuevasVentas.forEach(v=>{ if(!idsVentas.has(v.id)) ventas.push(v); });
           const idsGastos = new Set(gastos.map(g=>g.id));
           nuevosGastos.forEach(g=>{ if(!idsGastos.has(g.id)) gastos.push(g); });
+          nuevoStock.forEach(s=>{
+            const existente = findStock(s.nombre);
+            if(existente){
+              existente.stock = round2(existente.stock + s.stock);
+              if(s.costoUnit) existente.costoUnit = s.costoUnit;
+              if(s.precioUnit) existente.precioUnit = s.precioUnit;
+            } else {
+              stockList.push(s);
+            }
+          });
         }
         saveVentas();
         saveGastos();
+        saveStock();
         renderAll();
         alert("Backup importado correctamente.");
       }catch(err){
@@ -1131,13 +1418,18 @@
   });
 
   $("resetAll").addEventListener("click", function(){
-    if(ventas.length === 0 && gastos.length === 0){ alert("No hay datos para borrar."); return; }
-    if(confirm("Esto borrará TODAS las ventas y TODA la inversión guardadas en este navegador. ¿Continuar?")){
+    if(ventas.length === 0 && gastos.length === 0 && stockList.length === 0){
+      alert("No hay datos para borrar.");
+      return;
+    }
+    if(confirm("Esto borrará TODAS las ventas, la inversión y el stock guardados en este navegador. ¿Continuar?")){
       if(confirm("Última confirmación: se perderán todos los datos si no hiciste un backup. ¿Borrar todo?")){
         ventas = [];
         gastos = [];
+        stockList = [];
         saveVentas();
         saveGastos();
+        saveStock();
         renderAll();
       }
     }
