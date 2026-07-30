@@ -239,6 +239,43 @@
   .hist-row .val.profit{ color:var(--profit); }
   .hist-row .val.cost{ color:var(--cost); }
 
+  /* ---- recuadro de datos consolidados ---- */
+  .data-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+    gap:0;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .data-item{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:14px 16px;
+    border-right:1px solid var(--border);
+    border-bottom:1px solid var(--border);
+    background:var(--surface-soft);
+  }
+  .data-label{
+    font-size:11px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    color:var(--ink-soft);
+  }
+  .data-value{
+    font-family:var(--display);
+    font-size:19px;
+    font-weight:700;
+  }
+  .data-value.profit{ color:var(--profit); }
+  .data-value.cost{ color:var(--cost); }
+
+  /* ---- tabs de período (estadísticas) ---- */
+  .stats-tab{ border-radius:99px; }
+  .stats-tab.active{ background:var(--primary); color:#fff; border-color:var(--primary); }
+
   /* ---- balance ---- */
   .balance-box{
     border-radius:var(--radius);
@@ -514,6 +551,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
         Stock
       </button>
+      <button class="nav-item" data-view="estadisticas">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+        Estadísticas
+      </button>
     </nav>
 
     <div class="sidebar-footer">
@@ -568,31 +609,54 @@
         </div>
       </div>
 
-      <div class="panels-grid">
-        <div class="panel">
-          <h2 class="panel-title">Ventas — últimos 7 días</h2>
-          <p class="panel-sub">Total vendido por día.</p>
-          <div class="chart" id="chart"></div>
+      <div class="panel" style="margin-bottom:16px;">
+        <h2 class="panel-title">Resumen general</h2>
+        <p class="panel-sub">Todos tus datos, en un solo lugar — desde el primer registro.</p>
+        <div class="data-grid">
+          <div class="data-item">
+            <span class="data-label">Ventas registradas</span>
+            <span class="data-value num" id="genVentasCount">0</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Total vendido</span>
+            <span class="data-value num" id="ventaTotal">$0,00</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Costo de mercadería</span>
+            <span class="data-value cost num" id="costoTotal">$0,00</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Ganancia histórica</span>
+            <span class="data-value profit num" id="gananciaTotal">$0,00</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Invertido total</span>
+            <span class="data-value cost num" id="genInvertidoTotal">$0,00</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Valor en stock</span>
+            <span class="data-value num" id="genStockValor">$0,00</span>
+          </div>
+          <div class="data-item">
+            <span class="data-label">Productos con stock</span>
+            <span class="data-value num" id="genStockProductos">0</span>
+          </div>
         </div>
 
-        <div class="panel">
-          <h2 class="panel-title">Histórico</h2>
-          <p class="panel-sub">Desde el primer día registrado.</p>
-          <div class="hist-strip">
-            <div class="hist-row"><span>Total vendido</span><span class="val num" id="ventaTotal">$0,00</span></div>
-            <div class="hist-row"><span>Total costo de mercadería</span><span class="val cost num" id="costoTotal">$0,00</span></div>
-            <div class="hist-row"><span>Total ganancia</span><span class="val profit num" id="gananciaTotal">$0,00</span></div>
+        <div class="balance-box" id="balanceBox" style="margin-top:18px;">
+          <div class="balance-top">
+            <span class="balance-title">Balance neto (ganancia − inversión)</span>
+            <span class="balance-amount num" id="balanceAmount">$0,00</span>
           </div>
-
-          <div class="balance-box" id="balanceBox" style="margin-top:16px;">
-            <div class="balance-top">
-              <span class="balance-title">Balance neto</span>
-              <span class="balance-amount num" id="balanceAmount">$0,00</span>
-            </div>
-            <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
-            <div class="balance-note" id="balanceNote">Todavía no cargaste inversión ni ventas.</div>
-          </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%;"></div></div>
+          <div class="balance-note" id="balanceNote">Todavía no cargaste inversión ni ventas.</div>
         </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Ventas — últimos 7 días</h2>
+        <p class="panel-sub">Total vendido por día.</p>
+        <div class="chart" id="chart"></div>
       </div>
     </section>
 
@@ -842,6 +906,42 @@
       <datalist id="productosList"></datalist>
     </section>
 
+    <!-- ---------- ESTADISTICAS ---------- -->
+    <section class="view" data-view="estadisticas">
+      <div class="view-header">
+        <div>
+          <h1>Estadísticas</h1>
+          <p>Lo vendido, agrupado por semana, mes y año.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="btn-row" style="margin-bottom:18px;">
+          <button class="btn secondary small stats-tab" data-period="semana">Semanal</button>
+          <button class="btn secondary small stats-tab active" data-period="mes">Mensual</button>
+          <button class="btn secondary small stats-tab" data-period="anio">Anual</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Período</th>
+                <th class="right">Unidades</th>
+                <th class="right">Vendido</th>
+                <th class="right">Costo</th>
+                <th class="right">Ganancia</th>
+                <th class="right">Margen</th>
+              </tr>
+            </thead>
+            <tbody id="statsTablaBody"></tbody>
+          </table>
+          <div class="empty-state" id="statsEmptyState" style="display:none;">
+            Todavía no hay ventas para mostrar estadísticas.
+          </div>
+        </div>
+      </div>
+    </section>
+
     <p class="foot-note">Los datos se guardan solo en este navegador (localStorage). Hacé backup seguido para no perder tu historial.</p>
   </main>
 </div>
@@ -864,6 +964,10 @@
     <button class="mobile-nav-item" data-view="stock">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
       Stock
+    </button>
+    <button class="mobile-nav-item" data-view="estadisticas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 3v4"/><path d="M16 3v4"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+      Stats
     </button>
   </div>
 </nav>
@@ -1004,6 +1108,7 @@
     $("ventaTotal").textContent = fmt(tTotal.totalVenta);
     $("gananciaTotal").textContent = fmt(tTotal.ganancia);
     $("costoTotal").textContent = fmt(tTotal.totalCosto);
+    $("genVentasCount").textContent = String(ventas.length);
 
     return tTotal;
   }
@@ -1019,6 +1124,7 @@
 
     $("invertidoMes").textContent = fmt(invertidoMes);
     $("invertidoTotal").textContent = fmt(invertidoTotal);
+    $("genInvertidoTotal").textContent = fmt(invertidoTotal);
 
     const ganancia = tTotalVentas.ganancia;
     const balance = ganancia - invertidoTotal;
@@ -1076,6 +1182,8 @@
       empty.style.display = "block";
       $("stockProductos").textContent = "0";
       $("stockValor").textContent = fmt(0);
+      $("genStockProductos").textContent = "0";
+      $("genStockValor").textContent = fmt(0);
       updateProductosList([]);
       return;
     }
@@ -1111,6 +1219,8 @@
 
     $("stockProductos").textContent = String(conStock);
     $("stockValor").textContent = fmt(valorTotal);
+    $("genStockProductos").textContent = String(conStock);
+    $("genStockValor").textContent = fmt(valorTotal);
     updateProductosList(lista.map(s=>s.nombre));
   }
 
@@ -1233,6 +1343,84 @@
     });
   }
 
+  /** ---------- Estadísticas: semanal / mensual / anual ---------- **/
+  let currentStatsPeriod = "mes";
+
+  function capitalize(str){ return str.charAt(0).toUpperCase() + str.slice(1); }
+
+  function weekInfo(fecha){
+    const d = new Date(fecha + "T00:00:00");
+    const day = d.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(d); monday.setDate(d.getDate() + diffToMonday);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const key = monday.toISOString().slice(0,10);
+    const label = "Semana del " + monday.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit'}) +
+                  " al " + sunday.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+    return { key, label };
+  }
+
+  function monthInfo(fecha){
+    const key = fecha.slice(0,7);
+    const d = new Date(fecha + "T00:00:00");
+    const label = capitalize(d.toLocaleDateString('es-AR', {month:'long', year:'numeric'}));
+    return { key, label };
+  }
+
+  function yearInfo(fecha){
+    const key = fecha.slice(0,4);
+    return { key, label: key };
+  }
+
+  function groupVentas(infoFn){
+    const map = {};
+    ventas.forEach(v=>{
+      const { key, label } = infoFn(v.fecha);
+      if(!map[key]) map[key] = { key, label, items: [] };
+      map[key].items.push(v);
+    });
+    return Object.values(map)
+      .map(g => ({ key: g.key, label: g.label, totals: totalsOf(g.items) }))
+      .sort((a,b)=> b.key.localeCompare(a.key));
+  }
+
+  function renderEstadisticas(periodo){
+    const infoFn = periodo === "semana" ? weekInfo : periodo === "anio" ? yearInfo : monthInfo;
+    const grupos = groupVentas(infoFn);
+    const body = $("statsTablaBody");
+    const empty = $("statsEmptyState");
+    body.innerHTML = "";
+
+    if(grupos.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    grupos.forEach(g=>{
+      const margen = g.totals.totalVenta ? (g.totals.ganancia / g.totals.totalVenta * 100) : 0;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(g.label)}</td>
+        <td class="right">${g.totals.unidades}</td>
+        <td class="right">${fmt(g.totals.totalVenta)}</td>
+        <td class="right cost">${fmt(g.totals.totalCosto)}</td>
+        <td class="right profit">${fmt(g.totals.ganancia)}</td>
+        <td class="right">${pct(margen)}</td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  document.querySelectorAll(".stats-tab").forEach(btn=>{
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".stats-tab").forEach(b=> b.classList.remove("active"));
+      this.classList.add("active");
+      currentStatsPeriod = this.dataset.period;
+      renderEstadisticas(currentStatsPeriod);
+    });
+  });
+
   function renderAll(){
     const tTotal = renderResumen();
     renderInversion(tTotal);
@@ -1240,6 +1428,7 @@
     renderChart();
     renderTabla();
     renderTablaInv();
+    renderEstadisticas(currentStatsPeriod);
   }
 
   /** ---------- Preview del formulario de venta + autocompletar por stock ---------- **/
